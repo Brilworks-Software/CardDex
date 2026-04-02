@@ -1,0 +1,41 @@
+# ─── Service account keys (never commit these) ───────────────────────────────
+admin/service-account.json
+**/service-account*.json
+
+# ─── Environment / secrets (never commit these) ──────────────────────────────
+**/.env
+**/.env.local
+**/.env.production
+**/.env.development
+**/.env.*.local
+
+# ─── Node ────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Expo / React Native ─────────────────────────────────────────────────────
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# ─── React (admin panel) ─────────────────────────────────────────────────────
+admin-panel/build/
+
+# ─── Firebase ────────────────────────────────────────────────────────────────
+.firebase/
+firebase-debug.log
+firestore-debug.log
+storage.rules.bak
+*-debug.log
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "qr_codes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cardId", "order": "ASCENDING" },
+        { "fieldPath": "used",   "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "qr_codes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "claimedBy",  "order": "ASCENDING" },
+        { "fieldPath": "claimedAt",  "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest mobile --template blank-typescript)",
+      "Bash(npx expo:*)",
+      "Bash(npm install:*)",
+      "Bash(npx create-react-app:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm --version)",
+      "Bash(firebase:*)",
+      "Bash(java:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(apt-get install:*)",
+      "Bash(curl -s \"https://get.sdkman.io\")",
+      "Bash(bash)",
+      "Bash(source \"/home/brilworks/.sdkman/bin/sdkman-init.sh\")",
+      "Bash(sdk install:*)",
+      "Bash(node:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(FIRESTORE_EMULATOR_HOST=localhost:8080 node seed.js)",
+      "Bash(pkill -f \"firebase emulators\")",
+      "Bash(curl -s http://localhost:8080)",
+      "Bash(curl -s -o /dev/null -w \"Firebase Emulator UI  → http://localhost:4000  → %{http_code}\\\\n\" http://localhost:4000)",
+      "Bash(curl -s -o /dev/null -w \"Firestore Emulator    → http://localhost:8080  → %{http_code}\\\\n\" http://localhost:8080)",
+      "Bash(curl -s -o /dev/null -w \"Auth Emulator         → http://localhost:9099  → %{http_code}\\\\n\" http://localhost:9099)",
+      "Bash(curl -s -o /dev/null -w \"Admin Panel           → http://localhost:3000  → %{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"Mobile App \\(web\\)      → http://localhost:8084  → %{http_code}\\\\n\" http://localhost:8084)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8084)",
+      "Bash(ls .env*)"
+    ]
+  }
+}

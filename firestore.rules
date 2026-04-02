@@ -1,0 +1,97 @@
+rules_version = '2';
+
+// ─── CardDex Firestore Security Rules ────────────────────────────────────────
+// These same rules run on both the local emulator and production Firebase.
+// Testing rules locally BEFORE deploying is the correct workflow.
+//
+// Admin access: requires a custom claim { admin: true } on the user's Auth token.
+// Set this claim once per admin user with: node admin/set-admin-claim.js <email>
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ────────────────────────────────────────────────────
+
+    // User is signed in
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    // User has the admin custom claim
+    function isAdmin() {
+      return isAuthed() && request.auth.token.admin == true;
+    }
+
+    // User is accessing their own document
+    function isOwner(userId) {
+      return isAuthed() && request.auth.uid == userId;
+    }
+
+    // Incoming write only touches the allowed set of fields
+    function onlyChanges(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // ── /cards ──────────────────────────────────────────────────────────────
+    // Any authenticated user can read cards (needed to display the binder).
+    // Only admins can create, update, or delete cards.
+
+    match /cards/{cardId} {
+      allow read:   if isAuthed();
+      allow write:  if isAdmin();
+    }
+
+    // ── /qr_codes ────────────────────────────────────────────────────────────
+    // Any authenticated user can read a QR code document (needed to validate
+    // the code before redeeming).
+    //
+    // Update (redeem): only allowed when ALL conditions are true:
+    //   1. The code was not already used
+    //   2. The update sets used → true
+    //   3. claimedBy is set to the caller's own UID
+    //   4. cardId is not modified
+    //   5. No other fields change (prevents injection of extra data)
+    //
+    // Create: admin only (when generating codes for a new card).
+    // Delete: admin only.
+
+    match /qr_codes/{codeId} {
+      allow read:   if isAuthed();
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAuthed()
+        && resource.data.used   == false
+        && request.resource.data.used      == true
+        && request.resource.data.claimedBy == request.auth.uid
+        && request.resource.data.cardId    == resource.data.cardId
+        && onlyChanges(['used', 'claimedBy', 'claimedAt']);
+    }
+
+    // ── /users ───────────────────────────────────────────────────────────────
+    // Users can read and write their own profile only.
+    //
+    // Create: user can only create their own document at registration.
+    //   uid, email, displayName, binder (empty array), createdAt are set.
+    //
+    // Update: user can update their own document but cannot change immutable
+    //   fields (uid, email, createdAt). Only binder and displayName are mutable
+    //   by the user. Admins can update any user document (e.g. customer support).
+
+    match /users/{userId} {
+      allow read:   if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+        && request.resource.data.uid         == request.auth.uid
+        && request.resource.data.binder      is list
+        && request.resource.data.keys().hasAll(['uid', 'email', 'displayName', 'binder', 'createdAt']);
+      allow update: if isAdmin()
+        || (isOwner(userId)
+            && request.resource.data.uid        == resource.data.uid
+            && request.resource.data.email      == resource.data.email
+            && request.resource.data.createdAt  == resource.data.createdAt
+            && onlyChanges(['binder', 'displayName']));
+      allow delete: if isAdmin();
+    }
+
+  }
+}
