@@ -236,7 +236,6 @@ export default function VideoGenerator({
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
-  const [finalVideoUrl, setFinalVideoUrl] = useState('');
   const abortRef = useRef(false);
 
   // Re-build prompt when card fields change
@@ -265,7 +264,6 @@ export default function VideoGenerator({
     setError('');
     setProgress('');
     setPreviewUrl('');
-    setFinalVideoUrl('');
 
     try {
       const { base64, mimeType } = await fileToBase64(imageFile);
@@ -300,7 +298,6 @@ export default function VideoGenerator({
       await uploadBytes(storageRef, videoBlob, { contentType: 'video/mp4' });
       const downloadUrl = await getDownloadURL(storageRef);
 
-      setFinalVideoUrl(downloadUrl);
       setState('done');
       setProgress('');
       onVideoReady(downloadUrl);
@@ -319,7 +316,6 @@ export default function VideoGenerator({
     setError('');
     setProgress('');
     setPreviewUrl('');
-    setFinalVideoUrl('');
   };
 
   return (
