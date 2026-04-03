@@ -27,14 +27,25 @@ if (!isProd) {
 
 const admin = require('firebase-admin');
 
-const serviceAccount = isProd
-  ? require('./service-account.json')   // only needed for prod
-  : null;
+let serviceAccount = null;
+if (isProd) {
+  try {
+    serviceAccount = require('./service-account.json');
+  } catch (e) {
+    console.error('✗ Missing admin/service-account.json');
+    console.error('  Download a service account key from Firebase Console and save it as: admin/service-account.json');
+    console.error('  Then re-run: FIREBASE_ENV=prod node set-admin-claim.js <email>');
+    process.exit(1);
+  }
+}
 
 if (!admin.apps.length) {
   admin.initializeApp(
     isProd
-      ? { credential: admin.credential.cert(serviceAccount), projectId: 'carddex-prod' }
+      ? {
+          credential: admin.credential.cert(serviceAccount),
+          projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
+        }
       : { projectId: 'carddex-local' }
   );
 }
@@ -50,7 +61,15 @@ async function setAdminClaim(email) {
       console.error(`✗ No account found for: ${email}`);
       console.error('  Create an account in the mobile app first, then re-run this script.');
     } else {
-      console.error('✗ Failed:', e.message);
+      const message = e?.message || String(e);
+      console.error('✗ Failed:', message);
+      if (!isProd && /ECONNREFUSED/i.test(message)) {
+        console.error('  It looks like the Firebase Auth emulator is not running on localhost:9099.');
+        console.error('  Start emulators from the repo root:');
+        console.error('    firebase emulators:start');
+        console.error('  Or, to set claims in real Firebase, run:');
+        console.error('    FIREBASE_ENV=prod node set-admin-claim.js <email>');
+      }
     }
     process.exit(1);
   }

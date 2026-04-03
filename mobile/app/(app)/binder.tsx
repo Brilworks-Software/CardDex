@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +26,7 @@ export default function BinderScreen() {
   const [owned, setOwned] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -74,8 +77,8 @@ export default function BinderScreen() {
             {user?.displayName ? `${user.displayName}'s Collection` : 'My Collection'}
           </Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={logoutUser}>
-          <Text style={styles.logoutText}>Sign Out</Text>
+        <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowSignOutModal(true)}>
+          <Ionicons name="log-out-outline" size={20} color={Colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -112,14 +115,14 @@ export default function BinderScreen() {
             tintColor={Colors.primary}
           />
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <CardSlot
             card={item}
             owned={owned.includes(item.id)}
+            index={index}
             onPress={() => {
-              if (owned.includes(item.id)) {
-                router.push(`/(app)/card/${item.id}`);
-              }
+              const isOwned = owned.includes(item.id);
+              router.push(`/(app)/card/${item.id}?owned=${isOwned ? 'true' : 'false'}`);
             }}
           />
         )}
@@ -130,6 +133,38 @@ export default function BinderScreen() {
           </View>
         }
       />
+
+      {/* Sign-out confirmation modal */}
+      <Modal
+        visible={showSignOutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSignOutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Ionicons name="log-out-outline" size={48} color={Colors.primary} style={{ marginBottom: 4 }} />
+            <Text style={styles.modalTitle}>Sign Out?</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to sign out of your account?
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setShowSignOutModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirm}
+                onPress={() => { setShowSignOutModal(false); logoutUser(); }}
+              >
+                <Text style={styles.modalConfirmText}>Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Scan FAB */}
       <TouchableOpacity
@@ -171,19 +206,89 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: Fonts.sizes.sm,
-    color: Colors.textSecondary,
+    color: Colors.text,
     marginTop: 2,
   },
   logoutBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  logoutText: {
+  logoutIcon: {
+    color: Colors.primary,
+    fontSize: 18,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 28,
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalIcon: {
+    fontSize: 36,
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  modalTitle: {
+    color: Colors.text,
+    fontSize: Fonts.sizes.xl,
+    fontWeight: '800',
+  },
+  modalMessage: {
     color: Colors.textSecondary,
     fontSize: Fonts.sizes.sm,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    marginTop: 4,
+  },
+  modalCancel: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: Colors.textSecondary,
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+  },
+  modalConfirm: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+  },
+  modalConfirmText: {
+    color: '#fff',
+    fontSize: Fonts.sizes.md,
+    fontWeight: '700',
   },
   progressContainer: {
     marginHorizontal: 20,

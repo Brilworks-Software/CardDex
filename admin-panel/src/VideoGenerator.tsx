@@ -99,6 +99,7 @@ async function generateViaGemini(
 
   return pollOperation(
     `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${apiKey}`,
+    apiKey,
     onProgress
   );
 }
@@ -144,11 +145,12 @@ async function generateViaVertex(
   if (!operationName) throw new Error('No operation name returned from Vertex AI.');
 
   const pollUrl = `https://${location}-aiplatform.googleapis.com/v1/${operationName}?key=${apiKey}`;
-  return pollOperation(pollUrl, onProgress);
+  return pollOperation(pollUrl, apiKey, onProgress);
 }
 
 async function pollOperation(
   pollUrl: string,
+  apiKey: string,
   onProgress: (msg: string) => void
 ): Promise<Blob> {
   const MAX_ATTEMPTS = 72; // 6 min max (5s intervals)
@@ -167,19 +169,35 @@ async function pollOperation(
 
     if (data.error) throw new Error(data.error.message ?? 'Generation failed.');
 
-    // Try multiple possible response shapes (Gemini vs Vertex differ slightly)
+    // Extract base64 video — try all known response shapes
     const videoBase64 =
       data.response?.predictions?.[0]?.bytesBase64Encoded ||
       data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.bytesBase64Encoded ||
       data.response?.videos?.[0]?.bytesBase64Encoded;
 
-    if (!videoBase64) {
-      throw new Error('Generation completed but no video data in response. Check your API quota.');
+    if (videoBase64) {
+      onProgress('Video ready! Uploading to storage...');
+      const bytes = Uint8Array.from(atob(videoBase64), (c) => c.charCodeAt(0));
+      return new Blob([bytes], { type: 'video/mp4' });
     }
 
-    onProgress('Video ready! Uploading to storage...');
-    const bytes = Uint8Array.from(atob(videoBase64), (c) => c.charCodeAt(0));
-    return new Blob([bytes], { type: 'video/mp4' });
+    // Gemini API may return a URI instead of inline base64
+    const videoUri =
+      data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri ||
+      data.response?.predictions?.[0]?.uri;
+
+    if (videoUri) {
+      onProgress('Video ready! Downloading from Gemini...');
+      const sep = videoUri.includes('?') ? '&' : '?';
+      const videoRes = await fetch(`${videoUri}${sep}alt=media&key=${apiKey}`);
+      if (!videoRes.ok) {
+        throw new Error(`Failed to fetch generated video: HTTP ${videoRes.status}`);
+      }
+      onProgress('Video ready! Uploading to storage...');
+      return await videoRes.blob();
+    }
+
+    throw new Error('Generation completed but no video data in response. Check your API quota.');
   }
 
   throw new Error('Video generation timed out after 6 minutes. Try again or use a shorter duration.');

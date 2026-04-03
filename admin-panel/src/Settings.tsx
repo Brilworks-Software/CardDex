@@ -19,11 +19,20 @@ export const defaultSettings: AISettings = {
 };
 
 export function loadSettings(): AISettings {
+  const envGeminiKey = process.env.REACT_APP_GEMINI_API_KEY ?? '';
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return { ...defaultSettings, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw);
+      // If no API key was manually saved, fall back to the env var
+      return {
+        ...defaultSettings,
+        ...saved,
+        geminiApiKey: saved.geminiApiKey || envGeminiKey,
+      };
+    }
   } catch {}
-  return defaultSettings;
+  return { ...defaultSettings, geminiApiKey: envGeminiKey };
 }
 
 export function saveSettings(s: AISettings) {
